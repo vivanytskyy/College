@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Context>
+	 <!-- Specify a JDBC datasource for PostgreSQL -->
+	<Resource
+		name="jdbc/postgres"
+		global="jdbc/postgres"
+		auth="Container"
+		type="javax.sql.DataSource"
+		maxActive="20"
+		maxIdle="10"
+		maxWait="10000"
+		username="postgres"
+		password="password"
+		driverClassName="org.postgresql.Driver"
+		url="jdbc:postgresql://localhost/college"
+	/>
+	<!-- Reference the JNDI resource from Tomcat's web context.xml -->
+	<ResourceLink
+		name="jdbc/postgres"
+		global="jdbc/postgres"
+		type="javax.sql.DataSource"/>
+</Context>
