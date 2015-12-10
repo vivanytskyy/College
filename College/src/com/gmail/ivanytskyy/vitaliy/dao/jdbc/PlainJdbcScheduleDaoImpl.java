@@ -1,34 +1,43 @@
-package com.gmail.ivanytskyy.vitaliy.dao;
+package com.gmail.ivanytskyy.vitaliy.dao.jdbc;
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.LinkedList;
 import java.util.List;
 import javax.sql.DataSource;
 import org.apache.log4j.Logger;
-import com.gmail.ivanytskyy.vitaliy.domain.LessonInterval;
+import com.gmail.ivanytskyy.vitaliy.dao.DAOException;
+import com.gmail.ivanytskyy.vitaliy.dao.ScheduleDao;
+import com.gmail.ivanytskyy.vitaliy.domain.Schedule;
 /*
- * Task #2/2015/12/08 (pet web project #2)
- * JdbcLessonIntervalDao class
- * @version 1.01 2015.12.08
+ * Task #2/2015/12/08 (web project #2)
+ * PlainJdbcScheduleDaoImpl class
+ * @version 1.02 2015.12.09
  * @author Vitaliy Ivanytskyy
  */
-public class JdbcLessonIntervalDao implements LessonIntervalDao{
+public class PlainJdbcScheduleDaoImpl implements ScheduleDao{
 	private DataSource dataSource;
-	private static final Logger log = Logger.getLogger(JdbcLessonIntervalDao.class.getName());	
+	private static final Logger log = Logger.getLogger(PlainJdbcScheduleDaoImpl.class.getName());	
 	public void setDataSource(DataSource dataSource) {
 		this.dataSource = dataSource;
 	}
 	@Override
-	public LessonInterval createLessonInterval(String lessonStart, String lessonFinish) throws DAOException{
-		log.info("Creating new lesson interval with start = " + lessonStart + " and finish = " + lessonFinish);
-		String query = "INSERT INTO lesson_intervals (lesson_start, lesson_finish) VALUES (?, ?)";
+	public Schedule createSchedule(Calendar scheduleDate) throws DAOException{
+		log.info("Creating new schedule with scheduleDate = "
+				+ scheduleDate.get(Calendar.DAY_OF_MONTH)
+				+ "/" + (scheduleDate.get(Calendar.MONTH) + 1)
+				+ "/" + scheduleDate.get(Calendar.YEAR));
 		Connection connection = null;
 		PreparedStatement statement = null;
 		ResultSet resultSet = null;
-		LessonInterval lessonInterval = null;
+		Schedule schedule = null;		
+		Date dateSql = new Date(scheduleDate.getTimeInMillis());
+		String query = "INSERT INTO schedules (schedule_date) VALUES (?)";
 		try {
 			log.trace("Open connection");
 			try {
@@ -41,20 +50,25 @@ public class JdbcLessonIntervalDao implements LessonIntervalDao{
 			try {
 				log.trace("Create prepared statement");
 				statement = connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
-				statement.setString(1, lessonStart);
-				statement.setString(2, lessonFinish);
+				statement.setDate(1, dateSql);
 				statement.execute();
 				try {
 					log.trace("Get result set");
 					resultSet = statement.getGeneratedKeys();
-					log.trace("Create lesson interval to return");
+					log.trace("Create schedule to return");
 					while(resultSet.next()){
-						lessonInterval = new LessonInterval();
-						lessonInterval.setLessonStart(resultSet.getString("lesson_start"));
-						lessonInterval.setLessonFinish(resultSet.getString("lesson_finish"));
-						lessonInterval.setLessonIntervalId(resultSet.getLong(1));
+						Calendar calendar = new GregorianCalendar();
+						Date resultDateSql = resultSet.getDate("schedule_date");
+						calendar.setTime(resultDateSql);						
+						schedule = new Schedule();
+						schedule.setScheduleDate(calendar);
+						schedule.setScheduleId(resultSet.getLong(1));
 					}
-					log.trace("Lesson interval with with start = " + lessonStart + " and finish = " + lessonFinish + " was created");
+					log.trace("Schedule with scheduleDate = "
+						+ scheduleDate.get(Calendar.DAY_OF_MONTH) 
+						+ "/" + (scheduleDate.get(Calendar.MONTH) + 1)
+						+ "/" + scheduleDate.get(Calendar.YEAR)
+						+ " was created");
 				} catch (SQLException e) {
 					log.error("Cannot get result set", e);
 					throw new DAOException("Cannot get result set", e);
@@ -64,8 +78,8 @@ public class JdbcLessonIntervalDao implements LessonIntervalDao{
 				throw new DAOException("Cannot create prepared statement", e);
 			}
 		} catch (DAOException e) {
-			log.error("Cannot create lesson interval", e);
-			throw new DAOException("Cannot create lesson interval", e);
+			log.error("Cannot create schedule", e);
+			throw new DAOException("Cannot create schedule", e);
 		}finally{
 			try {
 				if (resultSet != null) {
@@ -92,17 +106,17 @@ public class JdbcLessonIntervalDao implements LessonIntervalDao{
 				log.warn("Cannot close connection", e);
 			}
 		}
-		log.trace("Returning lesson interval");
-		return lessonInterval;
+		log.trace("Returning schedule");
+		return schedule;
 	}
 	@Override
-	public LessonInterval findLessonIntervalById(long lessonIntervalId) throws DAOException{
-		log.info("Getting lesson interval by id = " + lessonIntervalId);
+	public Schedule findScheduleById(long scheduleId) throws DAOException{
+		log.info("Getting schedule by scheduleId = " + scheduleId);
 		Connection connection = null;
 		PreparedStatement statement = null;
 		ResultSet resultSet = null;
-		LessonInterval lessonInterval = null;
-		String query = "SELECT id, lesson_start, lesson_finish FROM lesson_intervals WHERE id = ? ";
+		Schedule schedule = null;
+		String query = "SELECT id, schedule_date FROM schedules WHERE id = ? ";
 		try {
 			log.trace("Open connection");
 			try {
@@ -115,18 +129,20 @@ public class JdbcLessonIntervalDao implements LessonIntervalDao{
 			try {
 				log.trace("Create prepared statement");
 				statement = connection.prepareStatement(query);
-				statement.setLong(1, lessonIntervalId);
+				statement.setLong(1, scheduleId);
 				try {
 					log.trace("Get result set");
 					resultSet = statement.executeQuery();
-					log.trace("Find lesson interval to return");
+					log.trace("Find schedule to return");
 					while (resultSet.next()) {
-						lessonInterval = new LessonInterval();
-						lessonInterval.setLessonStart(resultSet.getString("lesson_start"));
-						lessonInterval.setLessonFinish(resultSet.getString("lesson_finish"));
-						lessonInterval.setLessonIntervalId(resultSet.getLong("id"));
+						Calendar calendar = new GregorianCalendar();
+						Date resultDateSql = resultSet.getDate("schedule_date");
+						calendar.setTime(resultDateSql);						
+						schedule = new Schedule();
+						schedule.setScheduleDate(calendar);
+						schedule.setScheduleId(resultSet.getLong(1));
 					}
-					log.trace("Lesson interval with id = " + lessonIntervalId + " was found");
+					log.trace("Schedule with scheduleId = " + scheduleId + " was found");
 				} catch (SQLException e) {
 					log.error("Cannot get result set", e);
 					throw new DAOException("Cannot get result set", e);
@@ -136,8 +152,8 @@ public class JdbcLessonIntervalDao implements LessonIntervalDao{
 				throw new DAOException("Cannot create prepared statement", e);
 			}
 		} catch (DAOException e) {
-			log.error("Cannot find lecturer by id", e);
-			throw new DAOException("Cannot find lecturer by id", e);
+			log.error("Cannot find schedule by scheduleId", e);
+			throw new DAOException("Cannot find schedule by scheduleId", e);
 		}finally{
 			try {
 				if (resultSet != null) {
@@ -164,17 +180,21 @@ public class JdbcLessonIntervalDao implements LessonIntervalDao{
 				log.warn("Cannot close connection", e);
 			}
 		}
-		log.trace("Returning lesson interval");
-		return lessonInterval;
+		log.trace("Returning schedule");
+		return schedule;
 	}
 	@Override
-	public List<LessonInterval> findLessonIntervalsByLessonStart(String lessonStart) throws DAOException{
-		log.info("Getting lesson intervals by start = " + lessonStart);
+	public List<Schedule> findSchedulesByDate(Calendar scheduleDate) throws DAOException{
+		log.info("Getting schedules by scheduleDate = "
+				+ scheduleDate.get(Calendar.DAY_OF_MONTH) 
+				+ "/" + (scheduleDate.get(Calendar.MONTH) + 1)
+				+ "/" + scheduleDate.get(Calendar.YEAR));
 		Connection connection = null;
 		PreparedStatement statement = null;
 		ResultSet resultSet = null;
-		List<LessonInterval> lessonIntervals = new LinkedList<LessonInterval>();
-		String query = "SELECT id, lesson_start, lesson_finish FROM lesson_intervals WHERE lesson_start = ?";
+		List<Schedule> schedules = new LinkedList<Schedule>();
+		String query = "SELECT id, schedule_date FROM schedules WHERE schedule_date = ?";
+		Date dateSql = new Date(scheduleDate.getTimeInMillis());
 		try {
 			log.trace("Open connection");
 			try {
@@ -187,19 +207,25 @@ public class JdbcLessonIntervalDao implements LessonIntervalDao{
 			try {
 				log.trace("Create prepared statement");
 				statement = connection.prepareStatement(query);
-				statement.setString(1, lessonStart);
+				statement.setDate(1, dateSql);
 				try {
 					log.trace("Get result set");
 					resultSet = statement.executeQuery();
-					log.trace("Find lesson intervals to return");
+					log.trace("Find schedules to return");
 					while (resultSet.next()) {
-						LessonInterval lessonInterval = new LessonInterval();
-						lessonInterval.setLessonStart(resultSet.getString("lesson_start"));
-						lessonInterval.setLessonFinish(resultSet.getString("lesson_finish"));
-						lessonInterval.setLessonIntervalId(resultSet.getLong("id"));
-						lessonIntervals.add(lessonInterval);
+						Calendar calendar = new GregorianCalendar();
+						Date resultDateSql = resultSet.getDate("schedule_date");
+						calendar.setTime(resultDateSql);						
+						Schedule schedule = new Schedule();
+						schedule.setScheduleDate(calendar);
+						schedule.setScheduleId(resultSet.getLong(1));
+						schedules.add(schedule);
 					}
-					log.trace("Lesson intervals with start = " + lessonStart + " were found");
+					log.trace("Schedules with scheduleDate = "
+						+ scheduleDate.get(Calendar.DAY_OF_MONTH)
+						+ "/" + (scheduleDate.get(Calendar.MONTH) + 1)
+						+ "/" + scheduleDate.get(Calendar.YEAR)
+						+ " were found");
 				} catch (SQLException e) {
 					log.error("Cannot get result set", e);
 					throw new DAOException("Cannot get result set", e);
@@ -209,8 +235,8 @@ public class JdbcLessonIntervalDao implements LessonIntervalDao{
 				throw new DAOException("Cannot create prepared statement", e);
 			}
 		} catch (DAOException e) {
-			log.error("Cannot find lesson intervals by start", e);
-			throw new DAOException("Cannot find lesson intervals by start", e);
+			log.error("Cannot find schedules by date", e);
+			throw new DAOException("Cannot find schedules by scheduleDate", e);
 		}finally{
 			try {
 				if (resultSet != null) {
@@ -237,90 +263,17 @@ public class JdbcLessonIntervalDao implements LessonIntervalDao{
 				log.warn("Cannot close connection", e);
 			}
 		}
-		log.trace("Returning lesson intervals");
-		return lessonIntervals;
+		log.trace("Returning schedules");
+		return schedules;
 	}
 	@Override
-	public List<LessonInterval> findLessonIntervalsByLessonFinish(String lessonFinish) throws DAOException{
-		log.info("Getting lesson intervals by finish = " + lessonFinish);
-		Connection connection = null;
-		PreparedStatement statement = null;
-		ResultSet resultSet = null;
-		List<LessonInterval> lessonIntervals = new LinkedList<LessonInterval>();
-		String query = "SELECT id, lesson_start, lesson_finish FROM lesson_intervals WHERE lesson_finish = ?";
-		try {
-			log.trace("Open connection");
-			try {
-				connection = dataSource.getConnection();
-				log.trace("Connection was opened");
-			} catch (SQLException e1) {
-				log.error("Cannot open connection", e1);
-				throw new DAOException("Cannot open connection", e1);
-			}
-			try {
-				log.trace("Create prepared statement");
-				statement = connection.prepareStatement(query);
-				statement.setString(1, lessonFinish);
-				try {
-					log.trace("Get result set");
-					resultSet = statement.executeQuery();
-					log.trace("Find lesson intervals to return");
-					while (resultSet.next()) {
-						LessonInterval lessonInterval = new LessonInterval();
-						lessonInterval.setLessonStart(resultSet.getString("lesson_start"));
-						lessonInterval.setLessonFinish(resultSet.getString("lesson_finish"));						
-						lessonInterval.setLessonIntervalId(resultSet.getLong("id"));
-						lessonIntervals.add(lessonInterval);
-					}
-					log.trace("Lesson intervals with finish = " + lessonFinish + " were found");
-				} catch (SQLException e) {
-					log.error("Cannot get result set", e);
-					throw new DAOException("Cannot get result set", e);
-				}
-			} catch (SQLException e) {
-				log.error("Cannot create prepared statement", e);
-				throw new DAOException("Cannot create prepared statement", e);
-			}
-		} catch (DAOException e) {
-			log.error("Cannot find lesson intervals by finish", e);
-			throw new DAOException("Cannot find lesson intervals by finish", e);
-		}finally{
-			try {
-				if (resultSet != null) {
-					resultSet.close();
-					log.trace("Result set was closed");
-				}				
-			} catch (SQLException e) {
-				log.warn("Cannot close result set", e);
-			}
-			try {
-				if (statement != null) {
-					statement.close();
-					log.trace("Prepared statement was closed");
-				}				
-			} catch (SQLException e) {
-				log.warn("Cannot close prepared statement", e);
-			}
-			try {
-				if (connection != null) {
-					connection.close();
-					log.trace("Connection was closed");
-				}				
-			} catch (SQLException e) {
-				log.warn("Cannot close connection", e);
-			}
-		}
-		log.trace("Returning lesson intervals");
-		return lessonIntervals;
-	}
-	@Override
-	public List<LessonInterval> findAllLessonIntervals() throws DAOException{
-		log.info("Getting all lesson intervals");
+	public List<Schedule> findAllSchedules() throws DAOException{
+		log.info("Getting all schedules");
 		Connection connection = null;
 		Statement statement = null;
 		ResultSet resultSet = null;
-		List<LessonInterval> lessonIntervals = new LinkedList<LessonInterval>();
-		String query = "SELECT * FROM lesson_intervals";
+		List<Schedule> schedules = new LinkedList<Schedule>();
+		String query = "SELECT * FROM schedules";
 		try {
 			log.trace("Open connection");
 			try {
@@ -336,15 +289,17 @@ public class JdbcLessonIntervalDao implements LessonIntervalDao{
 				try {
 					log.trace("Get result set");
 					resultSet = statement.executeQuery(query);
-					log.trace("Getting lesson intervals");
+					log.trace("Getting schedules");
 					while (resultSet.next()) {
-						LessonInterval lessonInterval = new LessonInterval();
-						lessonInterval.setLessonStart(resultSet.getString("lesson_start"));
-						lessonInterval.setLessonFinish(resultSet.getString("lesson_finish"));						
-						lessonInterval.setLessonIntervalId(resultSet.getLong("id"));
-						lessonIntervals.add(lessonInterval);
+						Calendar calendar = new GregorianCalendar();
+						Date resultDateSql = resultSet.getDate("schedule_date");
+						calendar.setTime(resultDateSql);						
+						Schedule schedule = new Schedule();
+						schedule.setScheduleDate(calendar);
+						schedule.setScheduleId(resultSet.getLong(1));
+						schedules.add(schedule);
 					}
-					log.trace("Lesson intervals were gotten");
+					log.trace("Schedules were gotten");
 				} catch (SQLException e) {
 					log.error("Cannot get result set", e);
 					throw new DAOException("Cannot get result set", e);
@@ -354,8 +309,8 @@ public class JdbcLessonIntervalDao implements LessonIntervalDao{
 				throw new DAOException("Cannot create statement", e);
 			}
 		} catch (DAOException e) {
-			log.error("Cannot get all lesson intervals", e);
-			throw new DAOException("Cannot get all lesson intervals", e);
+			log.error("Cannot get all schedules", e);
+			throw new DAOException("Cannot get all schedules", e);
 		}finally{
 			try {
 				if (resultSet != null) {
@@ -382,15 +337,20 @@ public class JdbcLessonIntervalDao implements LessonIntervalDao{
 				log.warn("Cannot close connection", e);
 			}
 		}
-		log.trace("Returning all lesson intervals");
-		return lessonIntervals;
+		log.trace("Returning all schedules");
+		return schedules;
 	}
 	@Override
-	public void updateLessonInterval(long lessonIntervalId, String newLessonStart, String newLessonFinish) throws DAOException{
-		log.info("Updating lessonInterval with lessonIntervalId = " + lessonIntervalId);
+	public void updateSchedule(long scheduleId, Calendar newScheduleDate) throws DAOException{
+		log.info("Updating schedule with scheduleId = " + scheduleId 
+				+ " by new scheduleDate = "
+				+ newScheduleDate.get(Calendar.DAY_OF_MONTH) 
+				+ "/" + (newScheduleDate.get(Calendar.MONTH) + 1)
+				+ "/" + newScheduleDate.get(Calendar.YEAR));
 		Connection connection = null;
 		PreparedStatement statement = null;
-		String query = "UPDATE lesson_intervals SET lesson_start = ?, lesson_finish = ? WHERE id = ?";
+		Date dateSql = new Date(newScheduleDate.getTimeInMillis());
+		String query = "UPDATE schedules SET schedule_date = ? WHERE id = ?";
 		try {
 			log.trace("Open connection");
 			try {
@@ -403,18 +363,21 @@ public class JdbcLessonIntervalDao implements LessonIntervalDao{
 			try {
 				log.trace("Create prepared statement");
 				statement = connection.prepareStatement(query);
-				statement.setString(1, newLessonStart);
-				statement.setString(2, newLessonFinish);
-				statement.setLong(3, lessonIntervalId);
+				statement.setDate(1, dateSql);
+				statement.setLong(2, scheduleId);
 				statement.executeUpdate();
-				log.trace("LessonInterval with lessonIntervalId = " + lessonIntervalId + " was updated");
+				log.trace("Schedule with scheduleId = " + scheduleId 
+						+ " was updated by new scheduleDate = "
+						+ newScheduleDate.get(Calendar.DAY_OF_MONTH) 
+						+ "/" + (newScheduleDate.get(Calendar.MONTH) + 1)
+						+ "/" + newScheduleDate.get(Calendar.YEAR));
 			} catch (SQLException e) {
 				log.error("Cannot create prepared statement", e);
 				throw new DAOException("Cannot create prepared statement", e);
 			}
 		} catch (DAOException e) {
-			log.error("Cannot update lessonInterval", e);
-			throw new DAOException("Cannot update lessonInterval", e);
+			log.error("Cannot update schedule", e);
+			throw new DAOException("Cannot update schedule", e);
 		}finally{
 			try {
 				if (statement != null) {
@@ -435,11 +398,11 @@ public class JdbcLessonIntervalDao implements LessonIntervalDao{
 		}
 	}
 	@Override
-	public void deleteLessonIntervalById(long lessonIntervalId) throws DAOException{
-		log.info("Removing lesson interval by lessonIntervalid = " + lessonIntervalId);
+	public void deleteScheduleById(long scheduleId) throws DAOException{
+		log.info("Removing schedule by scheduleId = " + scheduleId);
 		Connection connection = null;
 		PreparedStatement statement = null;
-		String query = "DELETE FROM lesson_intervals WHERE id = ?";
+		String query = "DELETE FROM schedules WHERE id = ?";
 		try {
 			log.trace("Open connection");
 			try {
@@ -452,16 +415,16 @@ public class JdbcLessonIntervalDao implements LessonIntervalDao{
 			try {
 				log.trace("Create prepared statement");
 				statement = connection.prepareStatement(query);
-				statement.setLong(1, lessonIntervalId);
+				statement.setLong(1, scheduleId);
 				statement.executeUpdate();
-				log.trace("Lesson interval with lessonIntervalid = " + lessonIntervalId + " was removed");
+				log.trace("Schedule with scheduleId = " + scheduleId + " was removed");
 			} catch (SQLException e) {
 				log.error("Cannot create prepared statement", e);
 				throw new DAOException("Cannot create prepared statement", e);
 			}
 		} catch (DAOException e) {
-			log.error("Cannot remove lesson interval", e);
-			throw new DAOException("Cannot remove lesson interval", e);
+			log.error("Cannot remove schedule", e);
+			throw new DAOException("Cannot remove schedule", e);
 		}finally{
 			try {
 				if (statement != null) {
@@ -482,11 +445,11 @@ public class JdbcLessonIntervalDao implements LessonIntervalDao{
 		}
 	}
 	@Override
-	public void deleteAllLessonIntervals() throws DAOException{
-		log.info("Removing all lesson intervals");
+	public void deleteAllSchedules() throws DAOException{
+		log.info("Removing all schedules");
 		Connection connection = null;
 		Statement statement = null;
-		String query = "DELETE FROM lesson_intervals";
+		String query = "DELETE FROM schedules";
 		try {
 			log.trace("Open connection");
 			try {
@@ -500,14 +463,14 @@ public class JdbcLessonIntervalDao implements LessonIntervalDao{
 				log.trace("Create statement");
 				statement = connection.createStatement();
 				statement.executeUpdate(query);
-				log.trace("Lesson intervals were removed");
+				log.trace("Schedules were removed");
 			} catch (SQLException e) {
 				log.error("Cannot create statement", e);
 				throw new DAOException("Cannot create statement", e);
 			}
 		} catch (DAOException e) {
-			log.error("Cannot remove lesson intervals", e);
-			throw new DAOException("Cannot remove lesson intervals", e);
+			log.error("Cannot remove schedules", e);
+			throw new DAOException("Cannot remove schedules", e);
 		}finally{
 			try {
 				if (statement != null) {

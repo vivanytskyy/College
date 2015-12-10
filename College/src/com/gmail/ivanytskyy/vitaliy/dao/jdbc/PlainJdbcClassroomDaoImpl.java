@@ -1,4 +1,4 @@
-package com.gmail.ivanytskyy.vitaliy.dao;
+package com.gmail.ivanytskyy.vitaliy.dao.jdbc;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -8,36 +8,29 @@ import java.util.LinkedList;
 import java.util.List;
 import javax.sql.DataSource;
 import org.apache.log4j.Logger;
-import com.gmail.ivanytskyy.vitaliy.domain.ScheduleItem;
+import com.gmail.ivanytskyy.vitaliy.dao.ClassroomDao;
+import com.gmail.ivanytskyy.vitaliy.dao.DAOException;
+import com.gmail.ivanytskyy.vitaliy.domain.Classroom;
 /*
- * Task #2/2015/12/08 (pet web project #2)
- * JdbcScheduleItemDao class
- * @version 1.01 2015.12.08
+ * Task #2/2015/12/08 (web project #2)
+ * PlainJdbcClassroomDaoImpl class
+ * @version 1.02 2015.12.09
  * @author Vitaliy Ivanytskyy
  */
-public class JdbcScheduleItemDao implements ScheduleItemDao{
+public class PlainJdbcClassroomDaoImpl implements ClassroomDao{
 	private DataSource dataSource;
-	private static final Logger log = Logger.getLogger(JdbcScheduleItemDao.class.getName());	
+	private static final Logger log = Logger.getLogger(PlainJdbcClassroomDaoImpl.class.getName());	
 	public void setDataSource(DataSource dataSource) {
 		this.dataSource = dataSource;
 	}
 	@Override
-	public ScheduleItem createScheduleItem(long groupId, long lecturerId, long classroomId,
-			long subjectId, long lessonIntervalId, long scheduleId) throws DAOException{
-		log.info("Creating new scheduleItem with"
-				+ " groupId/lecturerId/classroomId/subjectId/lessonIntervalId/scheduleId = " 
-				+ groupId + "/" 
-				+ lecturerId + "/" 
-				+ classroomId + "/" 
-				+ subjectId + "/" 
-				+ lessonIntervalId + "/" 
-				+ scheduleId);
+	public Classroom createClassroom(String classroomName) throws DAOException{
+		log.info("Creating new classroom with classroomName = " + classroomName);
 		Connection connection = null;
 		PreparedStatement statement = null;
 		ResultSet resultSet = null;
-		ScheduleItem scheduleItem = null;
-		String query = "INSERT INTO schedule_items (group_id, lecturer_id, classroom_id, subject_id, "
-				+ "lesson_interval_id, schedule_id) VALUES (?, ?, ?, ?, ?, ?)";
+		Classroom classroom = null;
+		String query = "INSERT INTO classrooms (name) VALUES (?)";
 		try {
 			log.trace("Open connection");
 			try {
@@ -46,40 +39,22 @@ public class JdbcScheduleItemDao implements ScheduleItemDao{
 			} catch (SQLException e1) {
 				log.error("Cannot open connection", e1);
 				throw new DAOException("Cannot open connection", e1);
-			}
+			}			
 			try {
 				log.trace("Create prepared statement");
 				statement = connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
-				statement.setLong(1, groupId);
-				statement.setLong(2, lecturerId);
-				statement.setLong(3, classroomId);
-				statement.setLong(4, subjectId);
-				statement.setLong(5, lessonIntervalId);
-				statement.setLong(6, scheduleId);
+				statement.setString(1, classroomName);
 				statement.execute();
 				try {
 					log.trace("Get result set");
 					resultSet = statement.getGeneratedKeys();
-					log.trace("Create scheduleItem to return");
+					log.trace("Create classroom to return");
 					while(resultSet.next()){
-						scheduleItem = new ScheduleItem();
-						scheduleItem.setGroupId(resultSet.getLong("group_id"));
-						scheduleItem.setLecturerId(resultSet.getLong("lecturer_id"));
-						scheduleItem.setClassroomId(resultSet.getLong("classroom_id"));
-						scheduleItem.setSubjectId(resultSet.getLong("subject_id"));
-						scheduleItem.setLessonIntervalId(resultSet.getLong("lesson_interval_id"));
-						scheduleItem.setScheduleId(resultSet.getLong("schedule_id"));
-						scheduleItem.setScheduleItemId(resultSet.getLong("id"));
+						classroom = new Classroom();
+						classroom.setClassroomName(resultSet.getString("name"));
+						classroom.setClassroomId(resultSet.getLong(1));
 					}
-					log.trace("scheduleItem with name = " 
-							+ " groupId/lecturerId/classroomId/subjectId/lessonIntervalId/scheduleId = " 
-							+ groupId + "/" 
-							+ lecturerId + "/" 
-							+ classroomId + "/" 
-							+ subjectId + "/" 
-							+ lessonIntervalId + "/" 
-							+ scheduleId
-							+ " was created");
+					log.trace("Classroom with classroomName = " + classroomName + " was created");
 				} catch (SQLException e) {
 					log.error("Cannot get result set", e);
 					throw new DAOException("Cannot get result set", e);
@@ -89,14 +64,14 @@ public class JdbcScheduleItemDao implements ScheduleItemDao{
 				throw new DAOException("Cannot create prepared statement", e);
 			}
 		} catch (DAOException e) {
-			log.error("Cannot create scheduleItem", e);
-			throw new DAOException("Cannot create scheduleItem", e);
+			log.error("Cannot create classroom", e);
+			throw new DAOException("Cannot create classroom", e);
 		}finally{
 			try {
 				if (resultSet != null) {
 					resultSet.close();
 					log.trace("Result set was closed");
-				}				
+				}
 			} catch (SQLException e) {
 				log.warn("Cannot close result set", e);
 			}
@@ -104,7 +79,7 @@ public class JdbcScheduleItemDao implements ScheduleItemDao{
 				if (statement != null) {
 					statement.close();
 					log.trace("Prepared statement was closed");
-				}				
+				}
 			} catch (SQLException e) {
 				log.warn("Cannot close prepared statement", e);
 			}
@@ -112,73 +87,22 @@ public class JdbcScheduleItemDao implements ScheduleItemDao{
 				if (connection != null) {
 					connection.close();
 					log.trace("Connection was closed");
-				}				
+				}
 			} catch (SQLException e) {
 				log.warn("Cannot close connection", e);
 			}
 		}
-		log.trace("Returning scheduleItem");
-		return scheduleItem;
+		log.trace("Returning classroom");
+		return classroom;
 	}
 	@Override
-	public void moveScheduleItemToAnotherSchedule(long scheduleItemId, long scheduleId) throws DAOException{
-		log.info("Moving scheduleItem with scheduleItemid = " + scheduleItemId 
-				+ " to schedule with scheduleId = " + scheduleId);
-		Connection connection = null;
-		PreparedStatement statement = null;
-		String query = "UPDATE schedule_items SET schedule_id = ? WHERE id = ?";
-		try {
-			log.trace("Open connection");
-			try {
-				connection = dataSource.getConnection();
-				log.trace("Connection was opened");
-			} catch (SQLException e1) {
-				log.error("Cannot open connection", e1);
-				throw new DAOException("Cannot open connection", e1);
-			}
-			try {
-				log.trace("Create prepared statement");
-				statement = connection.prepareStatement(query);
-				statement.setLong(1, scheduleId);
-				statement.setLong(2, scheduleItemId);
-				statement.executeUpdate();
-				log.trace("scheduleItem with scheduleItemid = " + scheduleItemId 
-						+ " was moved to schedule with scheduleId = " + scheduleId);
-			} catch (SQLException e) {
-				log.error("Cannot create prepared statement", e);
-				throw new DAOException("Cannot create prepared statement", e);
-			}
-		} catch (DAOException e) {
-			log.error("Cannot move scheduleItem", e);
-			throw new DAOException("Cannot move scheduleItem", e);
-		}finally{
-			try {
-				if (statement != null) {
-					statement.close();
-					log.trace("Prepared statement was closed");
-				}				
-			} catch (SQLException e) {
-				log.warn("Cannot close prepared statement", e);
-			}
-			try {
-				if (connection != null) {
-					connection.close();
-					log.trace("Connection was closed");
-				}				
-			} catch (SQLException e) {
-				log.warn("Cannot close connection", e);
-			}
-		}
-	}
-	@Override
-	public ScheduleItem findScheduleItemById(long id) throws DAOException{
-		log.info("Getting scheduleItem by id = " + id);
+	public Classroom findClassroomById(long classroomId) throws DAOException{
+		log.info("Getting classroom by classroomId = " + classroomId);
 		Connection connection = null;
 		PreparedStatement statement = null;
 		ResultSet resultSet = null;
-		ScheduleItem scheduleItem = null;
-		String query = "SELECT id, group_id, lecturer_id, classroom_id, subject_id, "
-				+ "lesson_interval_id, schedule_id FROM schedule_items WHERE id = ? ";
+		Classroom classroom = null;
+		String query = "SELECT name FROM classrooms WHERE id = ? ";
 		try {
 			log.trace("Open connection");
 			try {
@@ -191,22 +115,17 @@ public class JdbcScheduleItemDao implements ScheduleItemDao{
 			try {
 				log.trace("Create prepared statement");
 				statement = connection.prepareStatement(query);
-				statement.setLong(1, id);
+				statement.setLong(1, classroomId);
 				try {
 					log.trace("Get result set");
 					resultSet = statement.executeQuery();
-					log.trace("Find scheduleItem to return");
+					log.trace("Find classroom to return");
 					while (resultSet.next()) {
-						scheduleItem = new ScheduleItem();
-						scheduleItem.setGroupId(resultSet.getLong("group_id"));
-						scheduleItem.setLecturerId(resultSet.getLong("lecturer_id"));
-						scheduleItem.setClassroomId(resultSet.getLong("classroom_id"));
-						scheduleItem.setSubjectId(resultSet.getLong("subject_id"));
-						scheduleItem.setLessonIntervalId(resultSet.getLong("lesson_interval_id"));
-						scheduleItem.setScheduleId(resultSet.getLong("schedule_id"));
-						scheduleItem.setScheduleItemId(resultSet.getLong("id"));
+						classroom = new Classroom();
+						classroom.setClassroomName(resultSet.getString("name"));
+						classroom.setClassroomId(classroomId);
 					}
-					log.trace("scheduleItem with id = " + id + " was found");
+					log.trace("Classroom with classroomId = " + classroomId + " was found");
 				} catch (SQLException e) {
 					log.error("Cannot get result set", e);
 					throw new DAOException("Cannot get result set", e);
@@ -216,8 +135,80 @@ public class JdbcScheduleItemDao implements ScheduleItemDao{
 				throw new DAOException("Cannot create prepared statement", e);
 			}
 		} catch (DAOException e) {
-			log.error("Cannot find scheduleItem by id", e);
-			throw new DAOException("Cannot find scheduleItem by id", e);
+			log.error("Cannot find classroom by classroomId", e);
+			throw new DAOException("Cannot find classroom by classroomId", e);
+		}finally{
+			try {
+				if (resultSet != null) {
+					resultSet.close();
+					log.trace("Result set was closed");
+				}
+			} catch (SQLException e) {
+				log.warn("Cannot close result set", e);
+			}
+			try {
+				if (statement != null) {
+					statement.close();
+					log.trace("Prepared statement was closed");
+				}				
+			} catch (SQLException e) {
+				log.warn("Cannot close prepared statement", e);
+			}
+			try {
+				if (connection != null) {
+					connection.close();
+					log.trace("Connection was closed");
+				}				
+			} catch (SQLException e) {
+				log.warn("Cannot close connection", e);
+			}
+		}
+		log.trace("Returning classroom");
+		return classroom;
+	}
+	@Override
+	public List<Classroom> findClassroomsByName(String classroomName) throws DAOException{
+		log.info("Getting classrooms by classroomName = " + classroomName);
+		Connection connection = null;
+		PreparedStatement statement = null;
+		ResultSet resultSet = null;
+		List<Classroom> classrooms = new LinkedList<Classroom>();
+		String query = "SELECT id, name FROM classrooms WHERE name = ?";
+		try {
+			log.trace("Open connection");
+			try {
+				connection = dataSource.getConnection();
+				log.trace("Connection was opened");
+			} catch (SQLException e1) {
+				log.error("Cannot open connection", e1);
+				throw new DAOException("Cannot open connection", e1);
+			}
+			try {
+				log.trace("Create prepared statement");
+				statement = connection.prepareStatement(query);
+				statement.setString(1, classroomName);
+				try {
+					log.trace("Get result set");
+					resultSet = statement.executeQuery();
+					log.trace("Find classrooms to return");
+					while (resultSet.next()) {
+						Classroom classroom = new Classroom();
+						classroom.setClassroomName(resultSet.getString("name"));
+						classroom.setClassroomId(resultSet.getLong("id"));
+						classrooms.add(classroom);						
+					}
+					log.trace("Classrooms with classroomName=" + classroomName + " was found");
+				} catch (SQLException e) {
+					log.error("Cannot get result set", e);
+					throw new DAOException("Cannot get result set", e);
+				}
+			} catch (SQLException e) {
+				log.error("Cannot create prepared statement", e);
+				throw new DAOException("Cannot create prepared statement", e);
+			}
+		} catch (DAOException e) {
+			log.error("Cannot find classrooms by classroomName", e);
+			throw new DAOException("Cannot find classrooms by classroomName", e);
 		}finally{
 			try {
 				if (resultSet != null) {
@@ -244,94 +235,17 @@ public class JdbcScheduleItemDao implements ScheduleItemDao{
 				log.warn("Cannot close connection", e);
 			}
 		}
-		log.trace("Returning scheduleItem");
-		return scheduleItem;
+		log.trace("Returning classrooms");
+		return classrooms;
 	}
 	@Override
-	public List<ScheduleItem> findScheduleItemsByScheduleId(long scheduleId) throws DAOException{
-		log.info("Getting scheduleItems by scheduleId = " + scheduleId);
-		Connection connection = null;
-		PreparedStatement statement = null;
-		ResultSet resultSet = null;
-		List<ScheduleItem> scheduleItems = new LinkedList<ScheduleItem>();
-		String query = "SELECT * FROM schedule_items WHERE schedule_id = ?";
-		try {
-			log.trace("Open connection");
-			try {
-				connection = dataSource.getConnection();
-				log.trace("Connection was opened");
-			} catch (SQLException e1) {
-				log.error("Cannot open connection", e1);
-				throw new DAOException("Cannot open connection", e1);
-			}
-			try {
-				log.trace("Create prepared statement");
-				statement = connection.prepareStatement(query);
-				statement.setLong(1, scheduleId);
-				try {
-					log.trace("Get result set");
-					resultSet = statement.executeQuery();
-					log.trace("Find scheduleItems to return");
-					while (resultSet.next()) {
-						ScheduleItem scheduleItem = new ScheduleItem();
-						scheduleItem.setGroupId(resultSet.getLong("group_id"));
-						scheduleItem.setLecturerId(resultSet.getLong("lecturer_id"));
-						scheduleItem.setClassroomId(resultSet.getLong("classroom_id"));
-						scheduleItem.setSubjectId(resultSet.getLong("subject_id"));
-						scheduleItem.setLessonIntervalId(resultSet.getLong("lesson_interval_id"));
-						scheduleItem.setScheduleId(resultSet.getLong("schedule_id"));
-						scheduleItem.setScheduleItemId(resultSet.getLong("id"));
-						scheduleItems.add(scheduleItem);
-					}
-					log.trace("scheduleItems of schedule with scheduleId = " + scheduleId + " were found");
-				} catch (SQLException e) {
-					log.error("Cannot get result set", e);
-					throw new DAOException("Cannot get result set", e);
-				}
-			} catch (SQLException e) {
-				log.error("Cannot create prepared statement", e);
-				throw new DAOException("Cannot create prepared statement", e);
-			}
-		} catch (DAOException e) {
-			log.error("Cannot find scheduleItems by scheduleId", e);
-			throw new DAOException("Cannot find scheduleItems by scheduleId", e);
-		}finally{
-			try {
-				if (resultSet != null) {
-					resultSet.close();
-					log.trace("Result set was closed");
-				}				
-			} catch (SQLException e) {
-				log.warn("Cannot close result set", e);
-			}
-			try {
-				if (statement != null) {
-					statement.close();
-					log.trace("Prepared statement was closed");
-				}				
-			} catch (SQLException e) {
-				log.warn("Cannot close prepared statement", e);
-			}
-			try {
-				if (connection != null) {
-					connection.close();
-				}				
-			} catch (SQLException e) {
-				log.warn("Cannot close connection", e);
-				log.trace("Connection was closed");
-			}
-		}
-		log.trace("Returning scheduleItems");
-		return scheduleItems;
-	}
-	@Override
-	public List<ScheduleItem> findAllScheduleItems() throws DAOException{
-		log.info("Getting all scheduleItems");
+	public List<Classroom> findAllClassrooms() throws DAOException{
+		log.info("Getting all classrooms");
 		Connection connection = null;
 		Statement statement = null;
 		ResultSet resultSet = null;
-		List<ScheduleItem> scheduleItems = new LinkedList<ScheduleItem>();
-		String query = "SELECT * FROM schedule_items";
+		List<Classroom> classrooms = new LinkedList<Classroom>();
+		String query = "SELECT * FROM classrooms";
 		try {
 			log.trace("Open connection");
 			try {
@@ -347,19 +261,14 @@ public class JdbcScheduleItemDao implements ScheduleItemDao{
 				try {
 					log.trace("Get result set");
 					resultSet = statement.executeQuery(query);
-					log.trace("Getting scheduleItems");
+					log.trace("Getting classrooms");
 					while (resultSet.next()) {
-						ScheduleItem scheduleItem = new ScheduleItem();
-						scheduleItem.setGroupId(resultSet.getLong("group_id"));
-						scheduleItem.setLecturerId(resultSet.getLong("lecturer_id"));
-						scheduleItem.setClassroomId(resultSet.getLong("classroom_id"));
-						scheduleItem.setSubjectId(resultSet.getLong("subject_id"));
-						scheduleItem.setLessonIntervalId(resultSet.getLong("lesson_interval_id"));
-						scheduleItem.setScheduleId(resultSet.getLong("schedule_id"));
-						scheduleItem.setScheduleItemId(resultSet.getLong("id"));
-						scheduleItems.add(scheduleItem);
+						Classroom classroom = new Classroom();
+						classroom.setClassroomName(resultSet.getString("name"));
+						classroom.setClassroomId(resultSet.getLong("id"));
+						classrooms.add(classroom);
 					}
-					log.trace("scheduleItems were gotten");
+					log.trace("Classrooms was gotten");
 				} catch (SQLException e) {
 					log.error("Cannot get result set", e);
 					throw new DAOException("Cannot get result set", e);
@@ -369,8 +278,8 @@ public class JdbcScheduleItemDao implements ScheduleItemDao{
 				throw new DAOException("Cannot create statement", e);
 			}
 		} catch (DAOException e) {
-			log.error("Cannot get all scheduleItems", e);
-			throw new DAOException("Cannot get all scheduleItems", e);
+			log.error("Cannot get all classrooms", e);
+			throw new DAOException("Cannot get all classrooms", e);
 		}finally{
 			try {
 				if (resultSet != null) {
@@ -397,31 +306,16 @@ public class JdbcScheduleItemDao implements ScheduleItemDao{
 				log.warn("Cannot close connection", e);
 			}
 		}
-		log.trace("Returning all scheduleItems");
-		return scheduleItems;
+		log.trace("Returning all classroom");
+		return classrooms;
 	}
 	@Override
-	public void updateScheduleItem(long scheduleItemId,
-			long newGroupId, long newLecturerId, long newClassroomId,
-			long newSubjectId, long newLessonIntervalId, long newScheduleId) throws DAOException{
-		log.info("Updating scheduleItem with scheduleItemId = " + scheduleItemId 
-				+ " by new groupId/lecturerId/classroomId/subjectId/lessonIntervalId/newScheduleId = " 
-				+ newGroupId + "/" 
-				+ newLecturerId + "/" 
-				+ newClassroomId + "/" 
-				+ newSubjectId + "/" 
-				+ newLessonIntervalId + "/"
-				+ newScheduleId);
+	public void updateClassroom(long classroomId, String newClassroomName) throws DAOException{
+		log.info("Updating classroom with classroomId = " + classroomId 
+				+ " by new classroomName = " + newClassroomName);
 		Connection connection = null;
 		PreparedStatement statement = null;
-		String query = "UPDATE schedule_items SET"
-				+ " group_id = ?,"
-				+ " lecturer_id = ?,"
-				+ " classroom_id = ?,"
-				+ " subject_id = ?,"
-				+ " lesson_interval_id = ?,"
-				+ " schedule_id = ?"
-				+ " WHERE id = ?";
+		String query = "UPDATE classrooms SET name = ? WHERE id = ?";
 		try {
 			log.trace("Open connection");
 			try {
@@ -434,29 +328,17 @@ public class JdbcScheduleItemDao implements ScheduleItemDao{
 			try {
 				log.trace("Create prepared statement");
 				statement = connection.prepareStatement(query);
-				statement.setLong(1, newGroupId);
-				statement.setLong(2, newLecturerId);
-				statement.setLong(3, newClassroomId);
-				statement.setLong(4, newSubjectId);
-				statement.setLong(5, newLessonIntervalId);
-				statement.setLong(6, newScheduleId);
-				statement.setLong(7, scheduleItemId);
+				statement.setString(1, newClassroomName);
+				statement.setLong(2, classroomId);
 				statement.executeUpdate();
-				log.trace("ScheduleItem with scheduleItemId = " + scheduleItemId 
-						+ " was updated by new groupId/lecturerId/classroomId/subjectId/lessonIntervalId/scheduleId = "
-						+ newGroupId + "/"
-						+ newLecturerId + "/"
-						+ newClassroomId + "/"
-						+ newSubjectId + "/"
-						+ newLessonIntervalId + "/"
-						+ newScheduleId);
+				log.trace("Classroom with classroomId = " + classroomId + " was updated by classroomName = " + newClassroomName);
 			} catch (SQLException e) {
 				log.error("Cannot create prepared statement", e);
 				throw new DAOException("Cannot create prepared statement", e);
 			}
 		} catch (DAOException e) {
-			log.error("Cannot update scheduleItem", e);
-			throw new DAOException("Cannot update scheduleItem", e);
+			log.error("Cannot update classroom", e);
+			throw new DAOException("Cannot update classroom", e);
 		}finally{
 			try {
 				if (statement != null) {
@@ -477,11 +359,11 @@ public class JdbcScheduleItemDao implements ScheduleItemDao{
 		}
 	}
 	@Override
-	public void deleteScheduleItemById(long scheduleItemId) throws DAOException{
-		log.info("Removing scheduleItem by scheduleItemId = " + scheduleItemId);
+	public void deleteClassroomById(long classroomId) throws DAOException{
+		log.info("Removing classroom by classroomId = " + classroomId);
 		Connection connection = null;
 		PreparedStatement statement = null;
-		String query = "DELETE FROM schedule_items WHERE id = ?";
+		String query = "DELETE FROM classrooms WHERE id = ?";
 		try {
 			log.trace("Open connection");
 			try {
@@ -494,16 +376,16 @@ public class JdbcScheduleItemDao implements ScheduleItemDao{
 			try {
 				log.trace("Create prepared statement");
 				statement = connection.prepareStatement(query);
-				statement.setLong(1, scheduleItemId);
+				statement.setLong(1, classroomId);
 				statement.executeUpdate();
-				log.trace("scheduleItem with scheduleItemId = " + scheduleItemId + " was removed");
+				log.trace("Classroom with classroomId = " + classroomId + " was removed");
 			} catch (SQLException e) {
 				log.error("Cannot create prepared statement", e);
 				throw new DAOException("Cannot create prepared statement", e);
 			}
 		} catch (DAOException e) {
-			log.error("Cannot remove scheduleItem", e);
-			throw new DAOException("Cannot remove scheduleItem", e);
+			log.error("Cannot remove classroom", e);
+			throw new DAOException("Cannot remove classroom", e);
 		}finally{
 			try {
 				if (statement != null) {
@@ -524,11 +406,11 @@ public class JdbcScheduleItemDao implements ScheduleItemDao{
 		}
 	}
 	@Override
-	public void deleteAllScheduleItems() throws DAOException{
-		log.info("Removing all scheduleItems");
+	public void deleteAllClassrooms() throws DAOException{
+		log.info("Removing all classrooms");
 		Connection connection = null;
 		Statement statement = null;
-		String query = "DELETE FROM schedule_items";
+		String query = "DELETE FROM classrooms";
 		try {
 			log.trace("Open connection");
 			try {
@@ -542,14 +424,14 @@ public class JdbcScheduleItemDao implements ScheduleItemDao{
 				log.trace("Create statement");
 				statement = connection.createStatement();
 				statement.executeUpdate(query);
-				log.trace("scheduleItems were removed");
+				log.trace("Classrooms was removed");
 			} catch (SQLException e) {
 				log.error("Cannot create statement", e);
 				throw new DAOException("Cannot create statement", e);
 			}
 		} catch (DAOException e) {
-			log.error("Cannot remove scheduleItems", e);
-			throw new DAOException("Cannot remove scheduleItems", e);
+			log.error("Cannot remove classrooms", e);
+			throw new DAOException("Cannot remove classrooms", e);
 		}finally{
 			try {
 				if (statement != null) {
@@ -565,6 +447,7 @@ public class JdbcScheduleItemDao implements ScheduleItemDao{
 					log.trace("Connection was closed");
 				}				
 			} catch (SQLException e) {
+				e.printStackTrace();
 				log.warn("Cannot close connection", e);
 			}
 		}		

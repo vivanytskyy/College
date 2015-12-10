@@ -1,4 +1,4 @@
-package com.gmail.ivanytskyy.vitaliy.dao;
+package com.gmail.ivanytskyy.vitaliy.dao.jdbc;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -8,16 +8,18 @@ import java.util.LinkedList;
 import java.util.List;
 import javax.sql.DataSource;
 import org.apache.log4j.Logger;
+import com.gmail.ivanytskyy.vitaliy.dao.DAOException;
+import com.gmail.ivanytskyy.vitaliy.dao.LecturerDao;
 import com.gmail.ivanytskyy.vitaliy.domain.Lecturer;
 /*
- * Task #2/2015/12/08 (pet web project #2)
- * JdbcLecturerDao class
- * @version 1.01 2015.12.08
+ * Task #2/2015/12/08 (web project #2)
+ * PlainJdbcLecturerDaoImpl class
+ * @version 1.02 2015.12.09
  * @author Vitaliy Ivanytskyy
  */
-public class JdbcLecturerDao implements LecturerDao{
+public class PlainJdbcLecturerDaoImpl implements LecturerDao{
 	private DataSource dataSource;
-	private static final Logger log = Logger.getLogger(JdbcLecturerDao.class.getName());	
+	private static final Logger log = Logger.getLogger(PlainJdbcLecturerDaoImpl.class.getName());	
 	public void setDataSource(DataSource dataSource) {
 		this.dataSource = dataSource;
 	}

@@ -1,4 +1,4 @@
-package com.gmail.ivanytskyy.vitaliy.dao;
+package com.gmail.ivanytskyy.vitaliy.dao.jdbc;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -8,27 +8,29 @@ import java.util.LinkedList;
 import java.util.List;
 import javax.sql.DataSource;
 import org.apache.log4j.Logger;
-import com.gmail.ivanytskyy.vitaliy.domain.Classroom;
+import com.gmail.ivanytskyy.vitaliy.dao.DAOException;
+import com.gmail.ivanytskyy.vitaliy.dao.SubjectDao;
+import com.gmail.ivanytskyy.vitaliy.domain.Subject;
 /*
- * Task #2/2015/12/08 (pet web project #2)
- * JdbcClassroomDao class
- * @version 1.01 2015.12.08
+ * Task #2/2015/12/08 (web project #2)
+ * PlainJdbcSubjectDaoImpl class
+ * @version 1.02 2015.12.09
  * @author Vitaliy Ivanytskyy
  */
-public class JdbcClassroomDao implements ClassroomDao{
+public class PlainJdbcSubjectDaoImpl implements SubjectDao{
 	private DataSource dataSource;
-	private static final Logger log = Logger.getLogger(JdbcClassroomDao.class.getName());	
+	private static final Logger log = Logger.getLogger(PlainJdbcSubjectDaoImpl.class.getName());	
 	public void setDataSource(DataSource dataSource) {
 		this.dataSource = dataSource;
 	}
 	@Override
-	public Classroom createClassroom(String classroomName) throws DAOException{
-		log.info("Creating new classroom with classroomName = " + classroomName);
+	public Subject createSubject(String subjectName) throws DAOException{
+		log.info("Creating new subject with subjectName = " + subjectName);
 		Connection connection = null;
 		PreparedStatement statement = null;
 		ResultSet resultSet = null;
-		Classroom classroom = null;
-		String query = "INSERT INTO classrooms (name) VALUES (?)";
+		Subject subject = null;
+		String query = "INSERT INTO subjects (name) VALUES (?)";
 		try {
 			log.trace("Open connection");
 			try {
@@ -37,22 +39,22 @@ public class JdbcClassroomDao implements ClassroomDao{
 			} catch (SQLException e1) {
 				log.error("Cannot open connection", e1);
 				throw new DAOException("Cannot open connection", e1);
-			}			
+			}
 			try {
 				log.trace("Create prepared statement");
 				statement = connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
-				statement.setString(1, classroomName);
+				statement.setString(1, subjectName);
 				statement.execute();
 				try {
 					log.trace("Get result set");
 					resultSet = statement.getGeneratedKeys();
-					log.trace("Create classroom to return");
+					log.trace("Create subject to return");
 					while(resultSet.next()){
-						classroom = new Classroom();
-						classroom.setClassroomName(resultSet.getString("name"));
-						classroom.setClassroomId(resultSet.getLong(1));
+						subject = new Subject();
+						subject.setSubjectName(resultSet.getString("name"));
+						subject.setSubjectId(resultSet.getLong(1));
 					}
-					log.trace("Classroom with classroomName = " + classroomName + " was created");
+					log.trace("Subject with subjectName = " + subjectName + " was created");
 				} catch (SQLException e) {
 					log.error("Cannot get result set", e);
 					throw new DAOException("Cannot get result set", e);
@@ -62,14 +64,14 @@ public class JdbcClassroomDao implements ClassroomDao{
 				throw new DAOException("Cannot create prepared statement", e);
 			}
 		} catch (DAOException e) {
-			log.error("Cannot create classroom", e);
-			throw new DAOException("Cannot create classroom", e);
+			log.error("Cannot create subject", e);
+			throw new DAOException("Cannot create subject", e);
 		}finally{
 			try {
 				if (resultSet != null) {
 					resultSet.close();
 					log.trace("Result set was closed");
-				}
+				}				
 			} catch (SQLException e) {
 				log.warn("Cannot close result set", e);
 			}
@@ -77,7 +79,7 @@ public class JdbcClassroomDao implements ClassroomDao{
 				if (statement != null) {
 					statement.close();
 					log.trace("Prepared statement was closed");
-				}
+				}				
 			} catch (SQLException e) {
 				log.warn("Cannot close prepared statement", e);
 			}
@@ -85,22 +87,22 @@ public class JdbcClassroomDao implements ClassroomDao{
 				if (connection != null) {
 					connection.close();
 					log.trace("Connection was closed");
-				}
+				}				
 			} catch (SQLException e) {
 				log.warn("Cannot close connection", e);
 			}
 		}
-		log.trace("Returning classroom");
-		return classroom;
+		log.trace("Returning subject");
+		return subject;
 	}
 	@Override
-	public Classroom findClassroomById(long classroomId) throws DAOException{
-		log.info("Getting classroom by classroomId = " + classroomId);
+	public Subject findSubjectById(long subjectId) throws DAOException{
+		log.info("Getting subject by subjectId = " + subjectId);
 		Connection connection = null;
 		PreparedStatement statement = null;
 		ResultSet resultSet = null;
-		Classroom classroom = null;
-		String query = "SELECT name FROM classrooms WHERE id = ? ";
+		Subject subject = null;
+		String query = "SELECT name FROM subjects WHERE id = ? ";
 		try {
 			log.trace("Open connection");
 			try {
@@ -113,17 +115,17 @@ public class JdbcClassroomDao implements ClassroomDao{
 			try {
 				log.trace("Create prepared statement");
 				statement = connection.prepareStatement(query);
-				statement.setLong(1, classroomId);
+				statement.setLong(1, subjectId);
 				try {
 					log.trace("Get result set");
 					resultSet = statement.executeQuery();
-					log.trace("Find classroom to return");
+					log.trace("Find subject to return");
 					while (resultSet.next()) {
-						classroom = new Classroom();
-						classroom.setClassroomName(resultSet.getString("name"));
-						classroom.setClassroomId(classroomId);
+						subject = new Subject();
+						subject.setSubjectName(resultSet.getString("name"));
+						subject.setSubjectId(subjectId);
 					}
-					log.trace("Classroom with classroomId = " + classroomId + " was found");
+					log.trace("Subject with subjectId = " + subjectId + " was found");
 				} catch (SQLException e) {
 					log.error("Cannot get result set", e);
 					throw new DAOException("Cannot get result set", e);
@@ -133,14 +135,14 @@ public class JdbcClassroomDao implements ClassroomDao{
 				throw new DAOException("Cannot create prepared statement", e);
 			}
 		} catch (DAOException e) {
-			log.error("Cannot find classroom by classroomId", e);
-			throw new DAOException("Cannot find classroom by classroomId", e);
+			log.error("Cannot find subject by subjectId", e);
+			throw new DAOException("Cannot find subject by subjectId", e);
 		}finally{
 			try {
 				if (resultSet != null) {
 					resultSet.close();
 					log.trace("Result set was closed");
-				}
+				}				
 			} catch (SQLException e) {
 				log.warn("Cannot close result set", e);
 			}
@@ -161,17 +163,17 @@ public class JdbcClassroomDao implements ClassroomDao{
 				log.warn("Cannot close connection", e);
 			}
 		}
-		log.trace("Returning classroom");
-		return classroom;
+		log.trace("Returning subject");
+		return subject;
 	}
 	@Override
-	public List<Classroom> findClassroomsByName(String classroomName) throws DAOException{
-		log.info("Getting classrooms by classroomName = " + classroomName);
+	public List<Subject> findSubjectsByName(String subjectName) throws DAOException{
+		log.info("Getting subjects by subjectName = " + subjectName);
 		Connection connection = null;
 		PreparedStatement statement = null;
 		ResultSet resultSet = null;
-		List<Classroom> classrooms = new LinkedList<Classroom>();
-		String query = "SELECT id, name FROM classrooms WHERE name = ?";
+		List<Subject> subjects = new LinkedList<Subject>();
+		String query = "SELECT id, name FROM subjects WHERE name = ?";
 		try {
 			log.trace("Open connection");
 			try {
@@ -184,18 +186,18 @@ public class JdbcClassroomDao implements ClassroomDao{
 			try {
 				log.trace("Create prepared statement");
 				statement = connection.prepareStatement(query);
-				statement.setString(1, classroomName);
+				statement.setString(1, subjectName);
 				try {
 					log.trace("Get result set");
 					resultSet = statement.executeQuery();
-					log.trace("Find classrooms to return");
+					log.trace("Find subjects to return");
 					while (resultSet.next()) {
-						Classroom classroom = new Classroom();
-						classroom.setClassroomName(resultSet.getString("name"));
-						classroom.setClassroomId(resultSet.getLong("id"));
-						classrooms.add(classroom);						
+						Subject subject = new Subject();
+						subject.setSubjectName(resultSet.getString("name"));
+						subject.setSubjectId(resultSet.getLong("id"));
+						subjects.add(subject);
 					}
-					log.trace("Classrooms with classroomName=" + classroomName + " was found");
+					log.trace("Subjects with subjectName = " + subjectName + " were found");
 				} catch (SQLException e) {
 					log.error("Cannot get result set", e);
 					throw new DAOException("Cannot get result set", e);
@@ -205,8 +207,8 @@ public class JdbcClassroomDao implements ClassroomDao{
 				throw new DAOException("Cannot create prepared statement", e);
 			}
 		} catch (DAOException e) {
-			log.error("Cannot find classrooms by classroomName", e);
-			throw new DAOException("Cannot find classrooms by classroomName", e);
+			log.error("Cannot find subjects by subjectName", e);
+			throw new DAOException("Cannot find subjects by subjectName", e);
 		}finally{
 			try {
 				if (resultSet != null) {
@@ -233,17 +235,17 @@ public class JdbcClassroomDao implements ClassroomDao{
 				log.warn("Cannot close connection", e);
 			}
 		}
-		log.trace("Returning classrooms");
-		return classrooms;
+		log.trace("Returning subjects");
+		return subjects;
 	}
 	@Override
-	public List<Classroom> findAllClassrooms() throws DAOException{
-		log.info("Getting all classrooms");
+	public List<Subject> findAllSubjects() throws DAOException{
+		log.info("Getting all subjects");
 		Connection connection = null;
 		Statement statement = null;
 		ResultSet resultSet = null;
-		List<Classroom> classrooms = new LinkedList<Classroom>();
-		String query = "SELECT * FROM classrooms";
+		List<Subject> subjects = new LinkedList<Subject>();
+		String query = "SELECT * FROM subjects";
 		try {
 			log.trace("Open connection");
 			try {
@@ -259,14 +261,14 @@ public class JdbcClassroomDao implements ClassroomDao{
 				try {
 					log.trace("Get result set");
 					resultSet = statement.executeQuery(query);
-					log.trace("Getting classrooms");
+					log.trace("Getting subjects");
 					while (resultSet.next()) {
-						Classroom classroom = new Classroom();
-						classroom.setClassroomName(resultSet.getString("name"));
-						classroom.setClassroomId(resultSet.getLong("id"));
-						classrooms.add(classroom);
+						Subject subject = new Subject();
+						subject.setSubjectName(resultSet.getString("name"));					
+						subject.setSubjectId(resultSet.getLong("id"));
+						subjects.add(subject);
 					}
-					log.trace("Classrooms was gotten");
+					log.trace("Subjects were gotten");
 				} catch (SQLException e) {
 					log.error("Cannot get result set", e);
 					throw new DAOException("Cannot get result set", e);
@@ -276,8 +278,8 @@ public class JdbcClassroomDao implements ClassroomDao{
 				throw new DAOException("Cannot create statement", e);
 			}
 		} catch (DAOException e) {
-			log.error("Cannot get all classrooms", e);
-			throw new DAOException("Cannot get all classrooms", e);
+			log.error("Cannot get all subjects", e);
+			throw new DAOException("Cannot get all subjects", e);
 		}finally{
 			try {
 				if (resultSet != null) {
@@ -304,15 +306,15 @@ public class JdbcClassroomDao implements ClassroomDao{
 				log.warn("Cannot close connection", e);
 			}
 		}
-		log.trace("Returning all classroom");
-		return classrooms;
+		log.trace("Returning all subjects");
+		return subjects;
 	}
 	@Override
-	public void updateClassroom(long classroomId, String newClassroomName) throws DAOException{
-		log.info("Updating classroom with classroomId = " + classroomId + " by new classroomName = " + newClassroomName);
+	public void updateSubject(long subjectId, String newSubjectName) throws DAOException{
+		log.info("Updating subject with subjectId = " + subjectId + " by new subjectName = " + newSubjectName);
 		Connection connection = null;
 		PreparedStatement statement = null;
-		String query = "UPDATE classrooms SET name = ? WHERE id = ?";
+		String query = "UPDATE subjects SET name = ? WHERE id = ?";
 		try {
 			log.trace("Open connection");
 			try {
@@ -325,17 +327,17 @@ public class JdbcClassroomDao implements ClassroomDao{
 			try {
 				log.trace("Create prepared statement");
 				statement = connection.prepareStatement(query);
-				statement.setString(1, newClassroomName);
-				statement.setLong(2, classroomId);
+				statement.setString(1, newSubjectName);
+				statement.setLong(2, subjectId);
 				statement.executeUpdate();
-				log.trace("Classroom with classroomId = " + classroomId + " was updated by classroomName = " + newClassroomName);
+				log.trace("Subject with subjectId = " + subjectId + " was updated by new subjectName = " + newSubjectName);
 			} catch (SQLException e) {
 				log.error("Cannot create prepared statement", e);
 				throw new DAOException("Cannot create prepared statement", e);
 			}
 		} catch (DAOException e) {
-			log.error("Cannot update classroom", e);
-			throw new DAOException("Cannot update classroom", e);
+			log.error("Cannot update subject", e);
+			throw new DAOException("Cannot update subject", e);
 		}finally{
 			try {
 				if (statement != null) {
@@ -356,11 +358,11 @@ public class JdbcClassroomDao implements ClassroomDao{
 		}
 	}
 	@Override
-	public void deleteClassroomById(long classroomId) throws DAOException{
-		log.info("Removing classroom by classroomId = " + classroomId);
+	public void deleteSubjectById(long subjectId) throws DAOException{
+		log.info("Removing subject by subjectId = " + subjectId);
 		Connection connection = null;
 		PreparedStatement statement = null;
-		String query = "DELETE FROM classrooms WHERE id = ?";
+		String query = "DELETE FROM subjects WHERE id = ?";
 		try {
 			log.trace("Open connection");
 			try {
@@ -373,16 +375,16 @@ public class JdbcClassroomDao implements ClassroomDao{
 			try {
 				log.trace("Create prepared statement");
 				statement = connection.prepareStatement(query);
-				statement.setLong(1, classroomId);
+				statement.setLong(1, subjectId);
 				statement.executeUpdate();
-				log.trace("Classroom with classroomId = " + classroomId + " was removed");
+				log.trace("Subject with subjectId = " + subjectId + " was removed");
 			} catch (SQLException e) {
 				log.error("Cannot create prepared statement", e);
 				throw new DAOException("Cannot create prepared statement", e);
 			}
 		} catch (DAOException e) {
-			log.error("Cannot remove classroom", e);
-			throw new DAOException("Cannot remove classroom", e);
+			log.error("Cannot remove subject", e);
+			throw new DAOException("Cannot remove subject", e);
 		}finally{
 			try {
 				if (statement != null) {
@@ -403,11 +405,11 @@ public class JdbcClassroomDao implements ClassroomDao{
 		}
 	}
 	@Override
-	public void deleteAllClassrooms() throws DAOException{
-		log.info("Removing all classrooms");
+	public void deleteAllSubjects() throws DAOException{
+		log.info("Removing all subjects");
 		Connection connection = null;
 		Statement statement = null;
-		String query = "DELETE FROM classrooms";
+		String query = "DELETE FROM subjects";
 		try {
 			log.trace("Open connection");
 			try {
@@ -421,14 +423,14 @@ public class JdbcClassroomDao implements ClassroomDao{
 				log.trace("Create statement");
 				statement = connection.createStatement();
 				statement.executeUpdate(query);
-				log.trace("Classrooms was removed");
+				log.trace("Subjects were removed");
 			} catch (SQLException e) {
 				log.error("Cannot create statement", e);
 				throw new DAOException("Cannot create statement", e);
 			}
 		} catch (DAOException e) {
-			log.error("Cannot remove classrooms", e);
-			throw new DAOException("Cannot remove classrooms", e);
+			log.error("Cannot remove subjects", e);
+			throw new DAOException("Cannot remove subjects", e);
 		}finally{
 			try {
 				if (statement != null) {
@@ -444,7 +446,6 @@ public class JdbcClassroomDao implements ClassroomDao{
 					log.trace("Connection was closed");
 				}				
 			} catch (SQLException e) {
-				e.printStackTrace();
 				log.warn("Cannot close connection", e);
 			}
 		}		

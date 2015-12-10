@@ -1,41 +1,36 @@
-package com.gmail.ivanytskyy.vitaliy.dao;
+package com.gmail.ivanytskyy.vitaliy.dao.jdbc;
 import java.sql.Connection;
-import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
 import java.util.LinkedList;
 import java.util.List;
 import javax.sql.DataSource;
 import org.apache.log4j.Logger;
-import com.gmail.ivanytskyy.vitaliy.domain.Schedule;
+import com.gmail.ivanytskyy.vitaliy.dao.DAOException;
+import com.gmail.ivanytskyy.vitaliy.dao.GroupDao;
+import com.gmail.ivanytskyy.vitaliy.domain.Group;
 /*
- * Task #2/2015/12/08 (pet web project #2)
- * JdbcScheduleDao class
- * @version 1.01 2015.12.08
+ * Task #2/2015/12/08 (web project #2)
+ * PlainJdbcGroupDaoImpl class
+ * @version 1.02 2015.12.09
  * @author Vitaliy Ivanytskyy
  */
-public class JdbcScheduleDao implements ScheduleDao{
+public class PlainJdbcGroupDaoImpl implements GroupDao{
 	private DataSource dataSource;
-	private static final Logger log = Logger.getLogger(JdbcScheduleDao.class.getName());	
+	private static final Logger log = Logger.getLogger(PlainJdbcGroupDaoImpl.class);	
 	public void setDataSource(DataSource dataSource) {
 		this.dataSource = dataSource;
 	}
 	@Override
-	public Schedule createSchedule(Calendar scheduleDate) throws DAOException{
-		log.info("Creating new schedule with scheduleDate = "
-				+ scheduleDate.get(Calendar.DAY_OF_MONTH)
-				+ "/" + (scheduleDate.get(Calendar.MONTH) + 1)
-				+ "/" + scheduleDate.get(Calendar.YEAR));
+	public Group createGroup(String groupName) throws DAOException{
+		log.info("Creating new group with groupName = " + groupName);
 		Connection connection = null;
 		PreparedStatement statement = null;
 		ResultSet resultSet = null;
-		Schedule schedule = null;		
-		Date dateSql = new Date(scheduleDate.getTimeInMillis());
-		String query = "INSERT INTO schedules (schedule_date) VALUES (?)";
+		Group group = null;
+		String query = "INSERT INTO groups (name) VALUES (?)";
 		try {
 			log.trace("Open connection");
 			try {
@@ -48,25 +43,18 @@ public class JdbcScheduleDao implements ScheduleDao{
 			try {
 				log.trace("Create prepared statement");
 				statement = connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
-				statement.setDate(1, dateSql);
+				statement.setString(1, groupName);
 				statement.execute();
 				try {
 					log.trace("Get result set");
 					resultSet = statement.getGeneratedKeys();
-					log.trace("Create schedule to return");
+					log.trace("Create group to return");
 					while(resultSet.next()){
-						Calendar calendar = new GregorianCalendar();
-						Date resultDateSql = resultSet.getDate("schedule_date");
-						calendar.setTime(resultDateSql);						
-						schedule = new Schedule();
-						schedule.setScheduleDate(calendar);
-						schedule.setScheduleId(resultSet.getLong(1));
+						group = new Group();
+						group.setGroupName(resultSet.getString("name"));
+						group.setGroupId(resultSet.getLong(1));
 					}
-					log.trace("Schedule with scheduleDate = "
-						+ scheduleDate.get(Calendar.DAY_OF_MONTH) 
-						+ "/" + (scheduleDate.get(Calendar.MONTH) + 1)
-						+ "/" + scheduleDate.get(Calendar.YEAR)
-						+ " was created");
+					log.trace("Group with groupName = " + groupName + " was created");
 				} catch (SQLException e) {
 					log.error("Cannot get result set", e);
 					throw new DAOException("Cannot get result set", e);
@@ -76,8 +64,8 @@ public class JdbcScheduleDao implements ScheduleDao{
 				throw new DAOException("Cannot create prepared statement", e);
 			}
 		} catch (DAOException e) {
-			log.error("Cannot create schedule", e);
-			throw new DAOException("Cannot create schedule", e);
+			log.error("Cannot create group", e);
+			throw new DAOException("Cannot create group", e);
 		}finally{
 			try {
 				if (resultSet != null) {
@@ -104,17 +92,17 @@ public class JdbcScheduleDao implements ScheduleDao{
 				log.warn("Cannot close connection", e);
 			}
 		}
-		log.trace("Returning schedule");
-		return schedule;
+		log.trace("Returning group");
+		return group;
 	}
 	@Override
-	public Schedule findScheduleById(long scheduleId) throws DAOException{
-		log.info("Getting schedule by scheduleId = " + scheduleId);
+	public Group findGroupById(long groupId) throws DAOException{
+		log.info("Getting group by groupId = " + groupId);
 		Connection connection = null;
 		PreparedStatement statement = null;
 		ResultSet resultSet = null;
-		Schedule schedule = null;
-		String query = "SELECT id, schedule_date FROM schedules WHERE id = ? ";
+		Group group = null;
+		String query = "SELECT name FROM groups WHERE id = ? ";
 		try {
 			log.trace("Open connection");
 			try {
@@ -127,20 +115,17 @@ public class JdbcScheduleDao implements ScheduleDao{
 			try {
 				log.trace("Create prepared statement");
 				statement = connection.prepareStatement(query);
-				statement.setLong(1, scheduleId);
+				statement.setLong(1, groupId);
 				try {
 					log.trace("Get result set");
 					resultSet = statement.executeQuery();
-					log.trace("Find schedule to return");
+					log.trace("Find group to return");
 					while (resultSet.next()) {
-						Calendar calendar = new GregorianCalendar();
-						Date resultDateSql = resultSet.getDate("schedule_date");
-						calendar.setTime(resultDateSql);						
-						schedule = new Schedule();
-						schedule.setScheduleDate(calendar);
-						schedule.setScheduleId(resultSet.getLong(1));
+						group = new Group();
+						group.setGroupName(resultSet.getString("name"));
+						group.setGroupId(groupId);
 					}
-					log.trace("Schedule with scheduleId = " + scheduleId + " was found");
+					log.trace("Group with groupId = " + groupId + " was found");
 				} catch (SQLException e) {
 					log.error("Cannot get result set", e);
 					throw new DAOException("Cannot get result set", e);
@@ -150,8 +135,8 @@ public class JdbcScheduleDao implements ScheduleDao{
 				throw new DAOException("Cannot create prepared statement", e);
 			}
 		} catch (DAOException e) {
-			log.error("Cannot find schedule by scheduleId", e);
-			throw new DAOException("Cannot find schedule by scheduleId", e);
+			log.error("Cannot find classroom by groupId", e);
+			throw new DAOException("Cannot find classroom by groupId", e);
 		}finally{
 			try {
 				if (resultSet != null) {
@@ -178,21 +163,17 @@ public class JdbcScheduleDao implements ScheduleDao{
 				log.warn("Cannot close connection", e);
 			}
 		}
-		log.trace("Returning schedule");
-		return schedule;
+		log.trace("Returning group");
+		return group;
 	}
 	@Override
-	public List<Schedule> findSchedulesByDate(Calendar scheduleDate) throws DAOException{
-		log.info("Getting schedules by scheduleDate = "
-				+ scheduleDate.get(Calendar.DAY_OF_MONTH) 
-				+ "/" + (scheduleDate.get(Calendar.MONTH) + 1)
-				+ "/" + scheduleDate.get(Calendar.YEAR));
+	public List<Group> findGroupsByName(String groupName) throws DAOException{
+		log.info("Getting groups by groupName = " + groupName);
 		Connection connection = null;
 		PreparedStatement statement = null;
 		ResultSet resultSet = null;
-		List<Schedule> schedules = new LinkedList<Schedule>();
-		String query = "SELECT id, schedule_date FROM schedules WHERE schedule_date = ?";
-		Date dateSql = new Date(scheduleDate.getTimeInMillis());
+		List<Group> groups = new LinkedList<Group>();
+		String query = "SELECT id, name FROM groups WHERE name = ?";
 		try {
 			log.trace("Open connection");
 			try {
@@ -205,25 +186,18 @@ public class JdbcScheduleDao implements ScheduleDao{
 			try {
 				log.trace("Create prepared statement");
 				statement = connection.prepareStatement(query);
-				statement.setDate(1, dateSql);
+				statement.setString(1, groupName);
 				try {
 					log.trace("Get result set");
 					resultSet = statement.executeQuery();
-					log.trace("Find schedules to return");
+					log.trace("Find groups to return");
 					while (resultSet.next()) {
-						Calendar calendar = new GregorianCalendar();
-						Date resultDateSql = resultSet.getDate("schedule_date");
-						calendar.setTime(resultDateSql);						
-						Schedule schedule = new Schedule();
-						schedule.setScheduleDate(calendar);
-						schedule.setScheduleId(resultSet.getLong(1));
-						schedules.add(schedule);
+						Group group = new Group();
+						group.setGroupName(resultSet.getString("name"));
+						group.setGroupId(resultSet.getLong("id"));
+						groups.add(group);
 					}
-					log.trace("Schedules with scheduleDate = "
-						+ scheduleDate.get(Calendar.DAY_OF_MONTH)
-						+ "/" + (scheduleDate.get(Calendar.MONTH) + 1)
-						+ "/" + scheduleDate.get(Calendar.YEAR)
-						+ " were found");
+					log.trace("Groups with groupName = " + groupName + " were found");
 				} catch (SQLException e) {
 					log.error("Cannot get result set", e);
 					throw new DAOException("Cannot get result set", e);
@@ -233,8 +207,8 @@ public class JdbcScheduleDao implements ScheduleDao{
 				throw new DAOException("Cannot create prepared statement", e);
 			}
 		} catch (DAOException e) {
-			log.error("Cannot find schedules by date", e);
-			throw new DAOException("Cannot find schedules by scheduleDate", e);
+			log.error("Cannot find groups by groupName", e);
+			throw new DAOException("Cannot find groups by groupName", e);
 		}finally{
 			try {
 				if (resultSet != null) {
@@ -261,17 +235,17 @@ public class JdbcScheduleDao implements ScheduleDao{
 				log.warn("Cannot close connection", e);
 			}
 		}
-		log.trace("Returning schedules");
-		return schedules;
+		log.trace("Returning groups");
+		return groups;
 	}
 	@Override
-	public List<Schedule> findAllSchedules() throws DAOException{
-		log.info("Getting all schedules");
+	public List<Group> findAllGroups() throws DAOException{
+		log.info("Getting all groups");
 		Connection connection = null;
 		Statement statement = null;
 		ResultSet resultSet = null;
-		List<Schedule> schedules = new LinkedList<Schedule>();
-		String query = "SELECT * FROM schedules";
+		List<Group> groups = new LinkedList<Group>();
+		String query = "SELECT * FROM groups";
 		try {
 			log.trace("Open connection");
 			try {
@@ -287,17 +261,14 @@ public class JdbcScheduleDao implements ScheduleDao{
 				try {
 					log.trace("Get result set");
 					resultSet = statement.executeQuery(query);
-					log.trace("Getting schedules");
+					log.trace("Getting groups");
 					while (resultSet.next()) {
-						Calendar calendar = new GregorianCalendar();
-						Date resultDateSql = resultSet.getDate("schedule_date");
-						calendar.setTime(resultDateSql);						
-						Schedule schedule = new Schedule();
-						schedule.setScheduleDate(calendar);
-						schedule.setScheduleId(resultSet.getLong(1));
-						schedules.add(schedule);
+						Group group = new Group();
+						group.setGroupName(resultSet.getString("name"));
+						group.setGroupId(resultSet.getLong("id"));
+						groups.add(group);
 					}
-					log.trace("Schedules were gotten");
+					log.trace("Groups were gotten");
 				} catch (SQLException e) {
 					log.error("Cannot get result set", e);
 					throw new DAOException("Cannot get result set", e);
@@ -307,8 +278,8 @@ public class JdbcScheduleDao implements ScheduleDao{
 				throw new DAOException("Cannot create statement", e);
 			}
 		} catch (DAOException e) {
-			log.error("Cannot get all schedules", e);
-			throw new DAOException("Cannot get all schedules", e);
+			log.error("Cannot get all groups", e);
+			throw new DAOException("Cannot get all groups", e);
 		}finally{
 			try {
 				if (resultSet != null) {
@@ -335,20 +306,15 @@ public class JdbcScheduleDao implements ScheduleDao{
 				log.warn("Cannot close connection", e);
 			}
 		}
-		log.trace("Returning all schedules");
-		return schedules;
+		log.trace("Returning all groups");
+		return groups;
 	}
 	@Override
-	public void updateSchedule(long scheduleId, Calendar newScheduleDate) throws DAOException{
-		log.info("Updating schedule with scheduleId = " + scheduleId 
-				+ " by new scheduleDate = "
-				+ newScheduleDate.get(Calendar.DAY_OF_MONTH) 
-				+ "/" + (newScheduleDate.get(Calendar.MONTH) + 1)
-				+ "/" + newScheduleDate.get(Calendar.YEAR));
+	public void updateGroup(long groupId, String newGroupName) throws DAOException{
+		log.info("Updating group with groupId = " + groupId + " by new groupName = " + newGroupName);
 		Connection connection = null;
 		PreparedStatement statement = null;
-		Date dateSql = new Date(newScheduleDate.getTimeInMillis());
-		String query = "UPDATE schedules SET schedule_date = ? WHERE id = ?";
+		String query = "UPDATE groups SET name = ? WHERE id = ?";
 		try {
 			log.trace("Open connection");
 			try {
@@ -361,21 +327,17 @@ public class JdbcScheduleDao implements ScheduleDao{
 			try {
 				log.trace("Create prepared statement");
 				statement = connection.prepareStatement(query);
-				statement.setDate(1, dateSql);
-				statement.setLong(2, scheduleId);
+				statement.setString(1, newGroupName);
+				statement.setLong(2, groupId);
 				statement.executeUpdate();
-				log.trace("Schedule with scheduleId = " + scheduleId 
-						+ " was updated by new scheduleDate = "
-						+ newScheduleDate.get(Calendar.DAY_OF_MONTH) 
-						+ "/" + (newScheduleDate.get(Calendar.MONTH) + 1)
-						+ "/" + newScheduleDate.get(Calendar.YEAR));
+				log.trace("Group with groupId = " + groupId + " was updated by groupName = " + newGroupName);
 			} catch (SQLException e) {
 				log.error("Cannot create prepared statement", e);
 				throw new DAOException("Cannot create prepared statement", e);
 			}
 		} catch (DAOException e) {
-			log.error("Cannot update schedule", e);
-			throw new DAOException("Cannot update schedule", e);
+			log.error("Cannot update group", e);
+			throw new DAOException("Cannot update group", e);
 		}finally{
 			try {
 				if (statement != null) {
@@ -396,11 +358,11 @@ public class JdbcScheduleDao implements ScheduleDao{
 		}
 	}
 	@Override
-	public void deleteScheduleById(long scheduleId) throws DAOException{
-		log.info("Removing schedule by scheduleId = " + scheduleId);
+	public void deleteGroupById(long groupId) throws DAOException{
+		log.info("Removing group by groupId = " + groupId);
 		Connection connection = null;
 		PreparedStatement statement = null;
-		String query = "DELETE FROM schedules WHERE id = ?";
+		String query = "DELETE FROM groups WHERE id = ?";
 		try {
 			log.trace("Open connection");
 			try {
@@ -413,16 +375,16 @@ public class JdbcScheduleDao implements ScheduleDao{
 			try {
 				log.trace("Create prepared statement");
 				statement = connection.prepareStatement(query);
-				statement.setLong(1, scheduleId);
+				statement.setLong(1, groupId);
 				statement.executeUpdate();
-				log.trace("Schedule with scheduleId = " + scheduleId + " was removed");
+				log.trace("Group with groupId = " + groupId + " was removed");
 			} catch (SQLException e) {
 				log.error("Cannot create prepared statement", e);
 				throw new DAOException("Cannot create prepared statement", e);
 			}
 		} catch (DAOException e) {
-			log.error("Cannot remove schedule", e);
-			throw new DAOException("Cannot remove schedule", e);
+			log.error("Cannot remove group", e);
+			throw new DAOException("Cannot remove group", e);
 		}finally{
 			try {
 				if (statement != null) {
@@ -443,11 +405,11 @@ public class JdbcScheduleDao implements ScheduleDao{
 		}
 	}
 	@Override
-	public void deleteAllSchedules() throws DAOException{
-		log.info("Removing all schedules");
+	public void deleteAllGroups() throws DAOException{
+		log.info("Removing all groups");
 		Connection connection = null;
 		Statement statement = null;
-		String query = "DELETE FROM schedules";
+		String query = "DELETE FROM groups";
 		try {
 			log.trace("Open connection");
 			try {
@@ -461,14 +423,14 @@ public class JdbcScheduleDao implements ScheduleDao{
 				log.trace("Create statement");
 				statement = connection.createStatement();
 				statement.executeUpdate(query);
-				log.trace("Schedules were removed");
+				log.trace("Groups were removed");
 			} catch (SQLException e) {
 				log.error("Cannot create statement", e);
 				throw new DAOException("Cannot create statement", e);
 			}
 		} catch (DAOException e) {
-			log.error("Cannot remove schedules", e);
-			throw new DAOException("Cannot remove schedules", e);
+			log.error("Cannot remove groups", e);
+			throw new DAOException("Cannot remove groups", e);
 		}finally{
 			try {
 				if (statement != null) {

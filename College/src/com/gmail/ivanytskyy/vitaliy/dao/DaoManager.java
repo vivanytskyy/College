@@ -3,6 +3,8 @@ import org.apache.log4j.Logger;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+import com.gmail.ivanytskyy.vitaliy.dao.jdbc.*;
+import com.gmail.ivanytskyy.vitaliy.dao.jdbctemplate.*;
 /*
  * Task #2/2015/12/08 (pet web project #2)
  * DaoManager class
@@ -24,21 +26,29 @@ public final class DaoManager {
 		log.info("Creating context object");
 		ApplicationContext context = new ClassPathXmlApplicationContext("applicationContext.xml");
 		log.info("Obtain ClassroomDao object by context");
-		classroomDao = (JdbcClassroomDao) context.getBean("classroomDao");
+		//classroomDao = (PlainJdbcClassroomDaoImpl) context.getBean("classroomDao");
+		classroomDao = (JdbcTemplateClassroomDaoImpl) context.getBean("classroomDao");
 		log.info("Obtain GroupDao object by context");
-		groupDao = (JdbcGroupDao) context.getBean("groupDao");
+		//groupDao = (PlainJdbcGroupDaoImpl) context.getBean("groupDao");
+		groupDao = (JdbcTemplateGroupDaoImpl) context.getBean("groupDao");
 		log.info("Obtain LecturerDao object by context");
-		lecturerDao = (JdbcLecturerDao) context.getBean("lecturerDao");
+		//lecturerDao = (PlainJdbcLecturerDaoImpl) context.getBean("lecturerDao");
+		lecturerDao = (JdbcTemplateLecturerDaoImpl) context.getBean("lecturerDao");
 		log.info("Obtain LessonIntervalDao object by context");
-		lessonIntervalDao = (JdbcLessonIntervalDao) context.getBean("lessonIntervalDao");
+		//lessonIntervalDao = (PlainJdbcLessonIntervalDaoImpl) context.getBean("lessonIntervalDao");
+		lessonIntervalDao = (JdbcTemplateLessonIntervalDaoImpl) context.getBean("lessonIntervalDao");
 		log.info("Obtain ScheduleDao object by context");
-		scheduleDao = (JdbcScheduleDao) context.getBean("scheduleDao");
+		//scheduleDao = (PlainJdbcScheduleDaoImpl) context.getBean("scheduleDao");
+		scheduleDao = (JdbcTemplateScheduleDaoImpl) context.getBean("scheduleDao");
 		log.info("Obtain ScheduleItemDao object by context");
-		scheduleItemDao = (JdbcScheduleItemDao) context.getBean("scheduleItemDao");
+		//scheduleItemDao = (PlainJdbcScheduleItemDaoImpl) context.getBean("scheduleItemDao");
+		scheduleItemDao = (JdbcTemplateScheduleItemDaoImpl) context.getBean("scheduleItemDao");
 		log.info("Obtain StudentDao object by context");
-		studentDao = (JdbcStudentDao) context.getBean("studentDao");
+		//studentDao = (PlainJdbcStudentDaoImpl) context.getBean("studentDao");
+		studentDao = (JdbcTemplateStudentDaoImpl) context.getBean("studentDao");
 		log.info("Obtain SubjectDao object by context");
-		subjectDao = (JdbcSubjectDao) context.getBean("subjectDao");
+		//subjectDao = (PlainJdbcSubjectDaoImpl) context.getBean("subjectDao");
+		subjectDao = (JdbcTemplateSubjectDaoImpl) context.getBean("subjectDao");
 		log.info("Close context");
 		((ConfigurableApplicationContext) context).close();
 	}

@@ -26,28 +26,55 @@
 	<!-- for web applying-->
 	<jee:jndi-lookup id="dataSource" jndi-name="jdbc/postgres" resource-ref="true" proxy-interface="javax.sql.DataSource"/>
 	
-	<bean id="classroomDao" class="com.gmail.ivanytskyy.vitaliy.dao.JdbcClassroomDao">
+	<!-- for plain JDBC using -->
+	<!-- <bean id="classroomDao" class="com.gmail.ivanytskyy.vitaliy.dao.jdbc.PlainJdbcClassroomDaoImpl">
 		<property name="dataSource" ref="dataSource"/>
 	</bean>
-	<bean id="groupDao" class="com.gmail.ivanytskyy.vitaliy.dao.JdbcGroupDao">
+	<bean id="groupDao" class="com.gmail.ivanytskyy.vitaliy.dao.jdbc.PlainJdbcGroupDaoImpl">
 		<property name="dataSource" ref="dataSource"/>
 	</bean>
-	<bean id="lecturerDao" class="com.gmail.ivanytskyy.vitaliy.dao.JdbcLecturerDao">
+	<bean id="lecturerDao" class="com.gmail.ivanytskyy.vitaliy.dao.jdbc.PlainJdbcLecturerDaoImpl">
 		<property name="dataSource" ref="dataSource"/>
 	</bean>
-	<bean id="lessonIntervalDao" class="com.gmail.ivanytskyy.vitaliy.dao.JdbcLessonIntervalDao">
+	<bean id="lessonIntervalDao" class="com.gmail.ivanytskyy.vitaliy.dao.jdbc.PlainJdbcLessonIntervalDaoImpl">
 		<property name="dataSource" ref="dataSource"/>
 	</bean>
-	<bean id="scheduleDao" class="com.gmail.ivanytskyy.vitaliy.dao.JdbcScheduleDao">
+	<bean id="scheduleDao" class="com.gmail.ivanytskyy.vitaliy.dao.jdbc.PlainJdbcScheduleDaoImpl">
 		<property name="dataSource" ref="dataSource"/>
 	</bean>
-	<bean id="scheduleItemDao" class="com.gmail.ivanytskyy.vitaliy.dao.JdbcScheduleItemDao">
+	<bean id="scheduleItemDao" class="com.gmail.ivanytskyy.vitaliy.dao.jdbc.PlainJdbcScheduleItemDaoImpl">
 		<property name="dataSource" ref="dataSource"/>
 	</bean>
-	<bean id="studentDao" class="com.gmail.ivanytskyy.vitaliy.dao.JdbcStudentDao">
+	<bean id="studentDao" class="com.gmail.ivanytskyy.vitaliy.dao.jdbc.PlainJdbcStudentDaoImpl">
 		<property name="dataSource" ref="dataSource"/>
 	</bean>
-	<bean id="subjectDao" class="com.gmail.ivanytskyy.vitaliy.dao.JdbcSubjectDao">
+	<bean id="subjectDao" class="com.gmail.ivanytskyy.vitaliy.dao.jdbc.PlainJdbcSubjectDaoImpl">
 		<property name="dataSource" ref="dataSource"/>
-	</bean>	
+	</bean>	 -->
+	
+	<!-- for JdbcTemplate using -->
+	<bean id="classroomDao" class="com.gmail.ivanytskyy.vitaliy.dao.jdbctemplate.JdbcTemplateClassroomDaoImpl">
+		<property name="dataSource" ref="dataSource"/>
+	</bean>
+	<bean id="groupDao" class="com.gmail.ivanytskyy.vitaliy.dao.jdbctemplate.JdbcTemplateGroupDaoImpl">
+		<property name="dataSource" ref="dataSource"/>
+	</bean>
+	<bean id="lecturerDao" class="com.gmail.ivanytskyy.vitaliy.dao.jdbctemplate.JdbcTemplateLecturerDaoImpl">
+		<property name="dataSource" ref="dataSource"/>
+	</bean>
+	<bean id="lessonIntervalDao" class="com.gmail.ivanytskyy.vitaliy.dao.jdbctemplate.JdbcTemplateLessonIntervalDaoImpl">
+		<property name="dataSource" ref="dataSource"/>
+	</bean>
+	<bean id="scheduleDao" class="com.gmail.ivanytskyy.vitaliy.dao.jdbctemplate.JdbcTemplateScheduleDaoImpl">
+		<property name="dataSource" ref="dataSource"/>
+	</bean>
+	<bean id="scheduleItemDao" class="com.gmail.ivanytskyy.vitaliy.dao.jdbctemplate.JdbcTemplateScheduleItemDaoImpl">
+		<property name="dataSource" ref="dataSource"/>
+	</bean>
+	<bean id="studentDao" class="com.gmail.ivanytskyy.vitaliy.dao.jdbctemplate.JdbcTemplateStudentDaoImpl">
+		<property name="dataSource" ref="dataSource"/>
+	</bean>
+	<bean id="subjectDao" class="com.gmail.ivanytskyy.vitaliy.dao.jdbctemplate.JdbcTemplateSubjectDaoImpl">
+		<property name="dataSource" ref="dataSource"/>
+	</bean>		
 </beans>

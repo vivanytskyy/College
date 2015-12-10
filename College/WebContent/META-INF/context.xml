@@ -10,7 +10,7 @@
 		maxIdle="10"
 		maxWait="10000"
 		username="postgres"
-		password="password"
+		password="feeder"
 		driverClassName="org.postgresql.Driver"
 		url="jdbc:postgresql://localhost/college"
 	/>
