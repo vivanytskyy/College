@@ -16,15 +16,15 @@
         http://www.springframework.org/schema/context/spring-context.xsd">
         
     <!-- for testing -->    	
-	<!-- <bean id="dataSource"
+	<bean id="dataSource"
 		class="org.springframework.jdbc.datasource.DriverManagerDataSource"
 		p:driverClassName="org.postgresql.Driver"
 		p:url="jdbc:postgresql://localhost/college"
 		p:username="postgres"
-		p:password="password" /> -->	
+		p:password="password" />	
 	
 	<!-- for web applying-->
-	<jee:jndi-lookup id="dataSource" jndi-name="jdbc/postgres" resource-ref="true" proxy-interface="javax.sql.DataSource"/>
+	<!-- <jee:jndi-lookup id="dataSource" jndi-name="jdbc/postgres" resource-ref="true" proxy-interface="javax.sql.DataSource"/> -->
 	
 	<!-- for plain JDBC using -->
 	<!-- <bean id="classroomDao" class="com.gmail.ivanytskyy.vitaliy.dao.jdbc.PlainJdbcClassroomDaoImpl">
