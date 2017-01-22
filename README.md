@@ -10,4 +10,4 @@ List of technologies were applied:
 - JDBC;
 - Log4j;
 - JUnit4;
-- JNDI (Data source obtaining);
+- JNDI (Data source obtaining)
